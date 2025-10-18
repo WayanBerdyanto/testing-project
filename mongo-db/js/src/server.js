@@ -1,4 +1,5 @@
 import connectToMongo from "./connections/mongodDB.js";
+import { BSON } from 'bson';
 
 async function main() {
     let mongoConnection;
@@ -27,14 +28,14 @@ async function main() {
             });
         }
 
-        // Hitung estimasi size sebelum insert
-        const jsonData = JSON.stringify(logs);
-        const totalBytes = Buffer.byteLength(jsonData);
-        const totalKB = totalBytes / 1024;
-        const totalMB = totalKB / 1024;
-
+        // Hitung estimasi size BSON sebelum insert
+        let totalBsonBytes = logs.reduce((sum, doc) => sum + BSON.serialize(doc).length, 0);
+        const totalBsonMB = totalBsonBytes / 1024 / 1024;
         console.log(`🚀 Starting benchmark for ${total.toLocaleString()} logs (batch size: ${batchSize})...`);
-        console.log(`📦 Estimated total data size: ${totalMB.toFixed(2)} MB`);
+        console.log(`📦 Estimated total BSON payload: ${totalBsonMB.toFixed(2)} MB`);
+
+        // Statistik sebelum insert
+        const statsBefore = await db.command({ collStats: "tracelog" });
 
         // Mulai timer
         const start = process.hrtime.bigint();
@@ -49,19 +50,23 @@ async function main() {
         const end = process.hrtime.bigint();
         const durationSec = Number(end - start) / 1e9;
         const perInsert = durationSec / total;
-        const throughput = totalMB / durationSec;
+        const throughput = totalBsonMB / durationSec;
 
         console.log(`✅ Inserted ${total.toLocaleString()} logs in ${durationSec.toFixed(2)} seconds`);
         console.log(`⚡ Avg per insert: ${perInsert.toFixed(6)} s`);
         console.log(`📊 Throughput: ${throughput.toFixed(2)} MB/s`);
 
-        // 🔍 Ambil statistik collection langsung dari server MongoDB
-        const stats = await db.command({ collStats: "tracelog" });
+        // Statistik setelah insert
+        const statsAfter = await db.command({ collStats: "tracelog" });
+        const deltaStorage = statsAfter.storageSize - statsBefore.storageSize;
+        const deltaIndex = statsAfter.totalIndexSize - statsBefore.totalIndexSize;
 
         console.log("\n📊 Collection stats:");
-        console.log(`📦 Storage size: ${(stats.storageSize / 1024 / 1024).toFixed(2)} MB`);
-        console.log(`🗃️ Total index size: ${(stats.totalIndexSize / 1024 / 1024).toFixed(2)} MB`);
-        console.log(`📄 Document count: ${stats.count.toLocaleString()}`);
+        console.log(`📦 Storage size: ${(statsAfter.storageSize / 1024 / 1024).toFixed(2)} MB`);
+        console.log(`🗃️ Total index size: ${(statsAfter.totalIndexSize / 1024 / 1024).toFixed(2)} MB`);
+        console.log(`📄 Document count: ${statsAfter.count.toLocaleString()}`);
+        console.log(`📊 Storage delta: ${(deltaStorage / 1024 / 1024).toFixed(2)} MB`);
+        console.log(`📊 Index delta: ${(deltaIndex / 1024 / 1024).toFixed(2)} MB`);
     } catch (error) {
         console.error("❌ Error:", error);
     } finally {
