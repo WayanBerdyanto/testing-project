@@ -1,12 +1,8 @@
 pipeline {
     agent any
 
-    triggers {
-        githubPush()
-    }
-
     stages {
-        stage('Pull Latest Code') {
+        stage('Pull Code') {
             steps {
                 echo '[1] Pulling latest code...'
                 git branch: 'main', url: 'https://github.com/WayanBerdyanto/testing-project.git'
@@ -16,16 +12,16 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 dir('mongo-db/js') {
-                    echo '[2] Installing dependencies...'
+                    echo '[2] Install Dependencies...'
                     bat 'npm install'
                 }
             }
         }
 
-        stage('Run Script') {
+        stage('Run App') {
             steps {
                 dir('mongo-db/js') {
-                    echo '[3] Running script...'
+                    echo '[3] Running project...'
                     bat 'node src/metrics.js'
                 }
             }
