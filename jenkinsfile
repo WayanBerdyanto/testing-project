@@ -1,13 +1,9 @@
 pipeline {
     agent any
-
-    // Stage 1: Auto Pull from GitHub
     stages {
-        stage('Auto Pull from GitHub') {
+        stage('Auto Pull') {
             steps {
-                echo '[1] Pulling latest code from main branch...'
-                bat 'git pull origin main'
-                echo '[2] Pull complete ✅'
+                sh 'git pull origin main'
             }
         }
     }
