@@ -1,6 +1,7 @@
 pipeline {
     agent any
 
+    // Stage 1: Auto Pull from GitHub
     stages {
         stage('Auto Pull from GitHub') {
             steps {
