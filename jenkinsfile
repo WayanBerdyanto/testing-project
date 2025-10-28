@@ -2,28 +2,11 @@ pipeline {
     agent any
 
     stages {
-        stage('Pull Code') {
+        stage('Auto Pull from GitHub') {
             steps {
-                echo '[1] Pulling latest code...'
-                git branch: 'main', url: 'https://github.com/WayanBerdyanto/testing-project.git'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                dir('mongo-db/js') {
-                    echo '[2] Install Dependencies...'
-                    bat 'npm install'
-                }
-            }
-        }
-
-        stage('Run App') {
-            steps {
-                dir('mongo-db/js') {
-                    echo '[3] Running project...'
-                    bat 'node src/metrics.js'
-                }
+                echo '[1] Pulling latest code from main branch...'
+                bat 'git pull origin main'
+                echo '[2] Pull complete ✅'
             }
         }
     }
